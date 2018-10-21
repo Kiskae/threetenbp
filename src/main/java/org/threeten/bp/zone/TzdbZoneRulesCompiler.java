@@ -59,9 +59,9 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
 import org.threeten.bp.DayOfWeek;
+import org.threeten.bp.Duration;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalDateTime;
-import org.threeten.bp.LocalTime;
 import org.threeten.bp.Month;
 import org.threeten.bp.Year;
 import org.threeten.bp.ZoneOffset;
@@ -788,21 +788,7 @@ final class TzdbZoneRulesCompiler {
             if (st.hasMoreTokens()) {
                 String timeStr = st.nextToken();
                 int secsOfDay = parseSecs(timeStr);
-                if (secsOfDay == 86400) {
-                    mdt.endOfDay = true;
-                    secsOfDay = 0;
-                } else if (secsOfDay > 86400) {
-                    int daysToForward = secsOfDay / 86400;
-                    mdt.dayOfWeek = mdt.dayOfWeek.plus(daysToForward);
-                    if (mdt.dayOfMonth != -1) {
-                        mdt.dayOfMonth += daysToForward;
-                    } else {
-                        throw new IllegalArgumentException("Unable to determine which day '" + timeStr + "' rollover would apply to.");
-                    }
-                    secsOfDay = secsOfDay % 86400;
-                }
-                LocalTime time = deduplicate(LocalTime.ofSecondOfDay(secsOfDay));
-                mdt.time = time;
+                mdt.timeAfterMidnight = deduplicate(Duration.ofSeconds(secsOfDay));
                 mdt.timeDefinition = parseTimeDefinition(timeStr.charAt(timeStr.length() - 1));
             }
         }
@@ -988,10 +974,8 @@ final class TzdbZoneRulesCompiler {
         boolean adjustForwards = true;
         /** The day-of-week of the cutover. */
         DayOfWeek dayOfWeek;
-        /** The time of the cutover. */
-        LocalTime time = LocalTime.MIDNIGHT;
-        /** Whether this is midnight end of day. */
-        boolean endOfDay;
+        /** The time after midnight when the cutover occurs. */
+        Duration timeAfterMidnight = Duration.ZERO;
         /** The time of the cutover. */
         TimeDefinition timeDefinition = TimeDefinition.WALL;
 
@@ -1021,7 +1005,7 @@ final class TzdbZoneRulesCompiler {
 
         void addToBuilder(ZoneRulesBuilder bld) {
             adjustToFowards(2004);  // irrelevant, treat as leap year
-            bld.addRuleToWindow(startYear, endYear, month, dayOfMonth, dayOfWeek, time, endOfDay, timeDefinition, savingsAmount);
+            bld.addRuleToWindow(startYear, endYear, month, dayOfMonth, dayOfWeek, timeAfterMidnight, timeDefinition, savingsAmount);
         }
     }
 
@@ -1079,11 +1063,7 @@ final class TzdbZoneRulesCompiler {
                 }
             }
             date = deduplicate(date);
-            LocalDateTime ldt = LocalDateTime.of(date, time);
-            if (endOfDay) {
-                ldt = ldt.plusDays(1);
-            }
-            return ldt;
+            return date.atStartOfDay().plus(timeAfterMidnight);
         }
     }
 

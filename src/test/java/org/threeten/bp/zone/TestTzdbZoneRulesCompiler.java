@@ -41,8 +41,8 @@ import java.util.StringTokenizer;
 
 import org.testng.annotations.Test;
 import org.threeten.bp.DayOfWeek;
+import org.threeten.bp.Duration;
 import org.threeten.bp.LocalDate;
-import org.threeten.bp.LocalTime;
 import org.threeten.bp.Month;
 import org.threeten.bp.Year;
 import org.threeten.bp.zone.TzdbZoneRulesCompiler.LeapSecondRule;
@@ -310,8 +310,7 @@ public class TestTzdbZoneRulesCompiler {
         assertEquals(mdt.dayOfWeek, DayOfWeek.SUNDAY);
         assertEquals(mdt.dayOfMonth, -1);
         assertEquals(mdt.adjustForwards, false);
-        assertEquals(mdt.time, LocalTime.of(2, 20));
-        assertEquals(mdt.endOfDay, false);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(2, 20));
         assertEquals(mdt.timeDefinition, TimeDefinition.WALL);
     }
 
@@ -323,8 +322,7 @@ public class TestTzdbZoneRulesCompiler {
         assertEquals(mdt.dayOfWeek, null);
         assertEquals(mdt.dayOfMonth, 5);
         assertEquals(mdt.adjustForwards, true);
-        assertEquals(mdt.time, LocalTime.of(2, 20));
-        assertEquals(mdt.endOfDay, false);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(2, 20));
         assertEquals(mdt.timeDefinition, TimeDefinition.STANDARD);
     }
 
@@ -336,8 +334,7 @@ public class TestTzdbZoneRulesCompiler {
         assertEquals(mdt.dayOfWeek, DayOfWeek.SATURDAY);
         assertEquals(mdt.dayOfMonth, 5);
         assertEquals(mdt.adjustForwards, true);
-        assertEquals(mdt.time, LocalTime.of(2, 20));
-        assertEquals(mdt.endOfDay, false);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(2, 20));
         assertEquals(mdt.timeDefinition, TimeDefinition.UTC);
     }
 
@@ -349,8 +346,7 @@ public class TestTzdbZoneRulesCompiler {
         assertEquals(mdt.dayOfWeek, DayOfWeek.SATURDAY);
         assertEquals(mdt.dayOfMonth, 5);
         assertEquals(mdt.adjustForwards, false);
-        assertEquals(mdt.time, LocalTime.of(0, 0));
-        assertEquals(mdt.endOfDay, true);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(24, 0));
         assertEquals(mdt.timeDefinition, TimeDefinition.UTC);
     }
 
@@ -362,8 +358,7 @@ public class TestTzdbZoneRulesCompiler {
         assertEquals(mdt.dayOfWeek, DayOfWeek.SATURDAY);
         assertEquals(mdt.dayOfMonth, 15);
         assertEquals(mdt.adjustForwards, false);
-        assertEquals(mdt.time, LocalTime.of(0, 0));
-        assertEquals(mdt.endOfDay, false);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(0, 0));
         assertEquals(mdt.timeDefinition, TimeDefinition.WALL);
     }
 
@@ -375,8 +370,7 @@ public class TestTzdbZoneRulesCompiler {
         assertEquals(mdt.dayOfWeek, DayOfWeek.SUNDAY);
         assertEquals(mdt.dayOfMonth, -1);
         assertEquals(mdt.adjustForwards, false);
-        assertEquals(mdt.time, LocalTime.of(3, 0));
-        assertEquals(mdt.endOfDay, false);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(3, 0));
         assertEquals(mdt.timeDefinition, TimeDefinition.UTC);
     }
 
@@ -385,12 +379,15 @@ public class TestTzdbZoneRulesCompiler {
         TzdbZoneRulesCompiler test = new TzdbZoneRulesCompiler("2018f", new ArrayList<File>(), null, false);
         TZDBRule mdt = parseMonthDayTime(test, "Sep Sat>=8 25:00");
         assertEquals(mdt.month, Month.SEPTEMBER);
-        assertEquals(mdt.dayOfWeek, DayOfWeek.SUNDAY);
-        assertEquals(mdt.dayOfMonth, 9);
+        assertEquals(mdt.dayOfWeek, DayOfWeek.SATURDAY);
+        assertEquals(mdt.dayOfMonth, 8);
         assertEquals(mdt.adjustForwards, true);
-        assertEquals(mdt.time, LocalTime.of(1, 0));
-        assertEquals(mdt.endOfDay, false);
+        assertEquals(mdt.timeAfterMidnight, timeAsDuration(25, 0));
         assertEquals(mdt.timeDefinition, TimeDefinition.WALL);
+    }
+
+    private Duration timeAsDuration(int hour, int minutes) {
+        return Duration.ZERO.plusHours(hour).plusMinutes(minutes);
     }
 
     static final Method PARSE_MDT;
